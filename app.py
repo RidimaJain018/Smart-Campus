@@ -1,314 +1,560 @@
-from flask import Flask, render_template, request
+import streamlit as st
 import os
+import statistics
 
-app = Flask(__name__)
+# ── Page config ───────────────────────────────────────────────
+st.set_page_config(
+    page_title="Smart Campus - DSCE",
+    layout="centered"
+)
 
-# ── Lab 1 logic ──────────────────────────────────────────────
-def get_grade(score):
-    if score >= 90:
-        return "A", "Excellent"
-    elif score >= 75:
-        return "B", "Very Good"
-    elif score >= 60:
-        return "C", "Good"
-    elif score >= 40:
-        return "D", "Average"
-    else:
-        return "F", "Needs Improvement"
+# ── Shared state (persists within session) ────────────────────
+if "courses" not in st.session_state:
+    st.session_state.courses = []
+if "students" not in st.session_state:
+    st.session_state.students = []
+if "file_records" not in st.session_state:
+    st.session_state.file_records = []
+    st.session_state.file_id = 101
 
-# ── Lab 4 logic ──────────────────────────────────────────────
-def bubble_sort(arr):
-    lst = arr[:]
-    n = len(lst)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if lst[j] > lst[j + 1]:
-                lst[j], lst[j + 1] = lst[j + 1], lst[j]
-    return lst
+# ── Sidebar navigation ────────────────────────────────────────
+st.sidebar.title("Smart Campus")
+st.sidebar.markdown("---")
 
-def selection_sort(arr):
-    lst = arr[:]
-    n = len(lst)
-    for i in range(n):
-        min_idx = i
-        for j in range(i + 1, n):
-            if lst[j] < lst[min_idx]:
-                min_idx = j
-        lst[i], lst[min_idx] = lst[min_idx], lst[i]
-    return lst
+page = st.sidebar.radio("Go to", [
+    "Dashboard",
+    "Lab 1 · Registration & Grades",
+    "Lab 2 · Course Enrollment",
+    "Lab 3 · Student Records",
+    "Lab 4 · Search & Sort",
+    "Lab 5 · Fee Calculation",
+    "Lab 6 · File Records",
+    "Lab 7 · Directory Scanner",
+    "Lab 8 · Performance Analytics",
+])
 
-def linear_search(arr, target):
-    for i in range(len(arr)):
-        if arr[i] == target:
-            return i
-    return -1
+st.sidebar.markdown("---")
+st.sidebar.caption("Lab 9 & 10 — Integration Project")
 
-def binary_search(arr, target):
-    lo, hi = 0, len(arr) - 1
-    while lo <= hi:
-        mid = (lo + hi) // 2
-        if arr[mid] == target:
-            return mid
-        elif arr[mid] < target:
-            lo = mid + 1
+# ══════════════════════════════════════════════════════════════
+# DASHBOARD
+# ══════════════════════════════════════════════════════════════
+if page == "Dashboard":
+    st.title("Smart Campus Information System")
+    st.caption("Dayananda Sagar College of Engineering · Python Programming Lab")
+    #st.markdown("---")
+
+    #col1, col2, col3, col4 = st.columns(4)
+    #col1.metric("Total Modules", "8")
+    #col2.metric("Course Code", "1BPLC105B")
+    #col3.metric("Credits", "4")
+    #col4.metric("Type", "PLC")
+
+    #st.markdown("---")
+    st.subheader("All Modules")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.info("**Lab 1** · Registration & Grade Evaluation")
+        st.info("**Lab 2** · Course Enrollment Management")
+        st.info("**Lab 3** · Student Record Data Management")
+        st.info("**Lab 4** · Sorting & Searching Student IDs")
+    with c2:
+        st.info("**Lab 5** · Student Fee Calculation")
+        st.info("**Lab 6** · File Handling — Academic Records")
+        st.info("**Lab 7** · Directory Scanner")
+        st.info("**Lab 8** · Performance Analytics")
+
+    st.markdown("---")
+    st.caption("Use the sidebar to navigate between modules.")
+
+
+# ══════════════════════════════════════════════════════════════
+# LAB 1 — Registration & Grade Evaluation
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 1 · Registration & Grades":
+    st.title("Student Registration & Grade Evaluation")
+    st.caption("Lab 1 · Conditional Statements (if-elif-else)")
+    st.markdown("---")
+
+    name  = st.text_input("Student Name", placeholder="e.g. Priya Sharma")
+    score = st.number_input("Exam Score (0 – 100)", min_value=0.0, max_value=100.0, step=0.5)
+
+    if st.button("Evaluate Grade"):
+        if not name.strip():
+            st.error("Please enter a student name.")
         else:
-            hi = mid - 1
-    return -1
+            if score >= 90:
+                grade, remark = "A", "Excellent"
+            elif score >= 75:
+                grade, remark = "B", "Very Good"
+            elif score >= 60:
+                grade, remark = "C", "Good"
+            elif score >= 40:
+                grade, remark = "D", "Average"
+            else:
+                grade, remark = "F", "Needs Improvement"
 
-# ── In-memory storage (resets on restart) ────────────────────
-courses = []       # Lab 2
-students = []      # Lab 3
-file_records = []  # Lab 6
+            st.markdown("---")
+            st.subheader("Student Report")
+            c1, c2 = st.columns(2)
+            c1.metric("Name", name)
+            c1.metric("Score", score)
+            c2.metric("Grade", grade)
+            c2.metric("Remark", remark)
 
-# ── Routes ───────────────────────────────────────────────────
+            if grade == "A":
+                st.success(f"{name} scored {score} — Grade {grade}: {remark}")
+            elif grade in ("B", "C"):
+                st.info(f"{name} scored {score} — Grade {grade}: {remark}")
+            elif grade == "D":
+                st.warning(f"{name} scored {score} — Grade {grade}: {remark}")
+            else:
+                st.error(f"{name} scored {score} — Grade {grade}: {remark}")
 
-@app.route("/")
-def index():
-    return render_template("index.html")
 
-# Lab 1
-@app.route("/lab1", methods=["GET", "POST"])
-def lab1():
-    result = None
-    error = None
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        score_raw = request.form.get("score", "")
-        if not name:
-            error = "Please enter a student name."
+# ══════════════════════════════════════════════════════════════
+# LAB 2 — Course Enrollment
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 2 · Course Enrollment":
+    st.title("Course Enrollment Management")
+    st.caption("Lab 2 · Loops (while, break, continue)")
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+    course_name = col1.text_input("Course Name", placeholder="e.g. Mathematics")
+    credits     = col2.number_input("Credits", min_value=1, max_value=10, step=1)
+
+    c1, c2 = st.columns([1, 1])
+    add   = c1.button("Add Course")
+    clear = c2.button("Clear All")
+
+    if add:
+        if not course_name.strip():
+            st.error("Course name cannot be empty. (continue — skip invalid input)")
+        elif len(st.session_state.courses) >= 5:
+            st.error("Maximum 5 courses reached. (break — stop adding)")
+        else:
+            st.session_state.courses.append({"name": course_name, "credits": int(credits)})
+            st.success(f"'{course_name}' with {credits} credits added.")
+
+    if clear:
+        st.session_state.courses = []
+        st.info("All courses cleared.")
+
+    if st.session_state.courses:
+        st.markdown("---")
+        st.subheader("Enrolled Courses")
+        total_credits = 0
+        for i, c in enumerate(st.session_state.courses):
+            st.write(f"{i+1}. **{c['name']}** — {c['credits']} credits")
+            total_credits += c["credits"]
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        col1.metric("Total Courses", f"{len(st.session_state.courses)} / 5")
+        col2.metric("Total Credits", total_credits)
+    else:
+        st.info("No courses enrolled yet.")
+
+
+# ══════════════════════════════════════════════════════════════
+# LAB 3 — Student Records
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 3 · Student Records":
+    st.title("Student Record Data Management")
+    st.caption("Lab 3 · Data Structures — Lists, Dictionaries, Sets")
+    st.markdown("---")
+
+    st.subheader("Add Student Record")
+    col1, col2 = st.columns(2)
+    name   = col1.text_input("Student Name", placeholder="e.g. Rahul")
+    age    = col2.number_input("Age", min_value=1, max_value=100, step=1)
+    grades = st.text_input("Grades (comma separated)", placeholder="e.g. 85, 90, 78")
+
+    c1, c2 = st.columns([1, 1])
+    add   = c1.button("Add Student")
+    clear = c2.button("Clear Records")
+
+    if add:
+        if not name.strip():
+            st.error("Name cannot be empty.")
         else:
             try:
-                score = float(score_raw)
-                if not (0 <= score <= 100):
-                    error = "Score must be between 0 and 100."
+                grade_list = [float(g.strip()) for g in grades.split(",") if g.strip()]
+                if not grade_list:
+                    st.error("Enter at least one grade.")
                 else:
-                    grade, remark = get_grade(score)
-                    result = {"name": name, "score": score, "grade": grade, "remark": remark}
+                    avg = round(sum(grade_list) / len(grade_list), 2)
+                    st.session_state.students.append({
+                        "name": name, "age": int(age),
+                        "grades": grade_list, "avg": avg
+                    })
+                    st.success(f"Record for '{name}' added.")
             except ValueError:
-                error = "Please enter a valid numeric score."
-    return render_template("lab1.html", result=result, error=error)
+                st.error("Invalid grades. Enter numbers separated by commas.")
 
-# Lab 2
-@app.route("/lab2", methods=["GET", "POST"])
-def lab2():
-    error = None
-    if request.method == "POST":
-        action = request.form.get("action")
-        if action == "add":
-            name = request.form.get("course_name", "").strip()
-            credits_raw = request.form.get("credits", "")
-            if not name:
-                error = "Course name cannot be empty."
-            elif len(courses) >= 5:
-                error = "Maximum 5 courses allowed (break condition reached)."
-            elif not credits_raw.isdigit() or int(credits_raw) <= 0:
-                error = "Credits must be a positive integer (continue skips this)."
-            else:
-                courses.append({"name": name, "credits": int(credits_raw)})
-        elif action == "clear":
-            courses.clear()
-    total_credits = sum(c["credits"] for c in courses)
-    return render_template("lab2.html", courses=courses, total_credits=total_credits, error=error)
+    if clear:
+        st.session_state.students = []
+        st.info("Records cleared.")
 
-# Lab 3
-@app.route("/lab3", methods=["GET", "POST"])
-def lab3():
-    error = None
-    if request.method == "POST":
-        action = request.form.get("action")
-        if action == "add":
-            name = request.form.get("name", "").strip()
-            age_raw = request.form.get("age", "")
-            grades_raw = request.form.get("grades", "")
-            if not name:
-                error = "Name cannot be empty."
-            else:
-                try:
-                    age = int(age_raw)
-                    grades = [float(g.strip()) for g in grades_raw.split(",") if g.strip()]
-                    if not grades:
-                        error = "Enter at least one grade."
-                    else:
-                        avg = round(sum(grades) / len(grades), 2)
-                        students.append({"name": name, "age": age, "grades": grades, "avg": avg})
-                except ValueError:
-                    error = "Invalid age or grades."
-        elif action == "clear":
-            students.clear()
+    if st.session_state.students:
+        st.markdown("---")
+        st.subheader("Student Records (List of Dictionaries)")
+        for i, s in enumerate(st.session_state.students):
+            st.write(f"**{i+1}. {s['name']}** | Age: {s['age']} | Grades: {s['grades']} | Avg: {s['avg']}")
 
-    # Set operations
+    # Set analysis
+    st.markdown("---")
+    st.subheader("Event Participation Analysis (Sets)")
+
     event_A = {"Priya", "Rahul", "Anita", "Kiran"}
     event_B = {"Rahul", "Anita", "Sneha"}
-    sets = {
-        "A": sorted(event_A),
-        "B": sorted(event_B),
-        "common": sorted(event_A & event_B),
-        "only_A": sorted(event_A - event_B),
-        "all": sorted(event_A | event_B),
-    }
-    return render_template("lab3.html", students=students, sets=sets, error=error)
 
-# Lab 4
-@app.route("/lab4", methods=["GET", "POST"])
-def lab4():
-    result = None
-    error = None
-    if request.method == "POST":
-        ids_raw = request.form.get("ids", "")
-        target_raw = request.form.get("target", "")
+    col1, col2 = st.columns(2)
+    col1.write("**Event A:**")
+    col1.write(sorted(event_A))
+    col2.write("**Event B:**")
+    col2.write(sorted(event_B))
+
+    st.markdown("---")
+    col1, col2 = st.columns(2)
+    col1.write("**Common (A ∩ B):**")
+    col1.write(sorted(event_A & event_B))
+    col1.write("**Only in A (A − B):**")
+    col1.write(sorted(event_A - event_B))
+    col2.write("**All Participants (A ∪ B):**")
+    col2.write(sorted(event_A | event_B))
+    col2.write("**Only in B (B − A):**")
+    col2.write(sorted(event_B - event_A))
+
+
+# ══════════════════════════════════════════════════════════════
+# LAB 4 — Search & Sort
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 4 · Search & Sort":
+    st.title("Sorting & Searching Student IDs")
+    st.caption("Lab 4 · Bubble Sort, Selection Sort, Linear Search, Binary Search")
+    st.markdown("---")
+
+    ids_input    = st.text_input("Student IDs (comma separated)", value="105, 102, 110, 108, 101, 115")
+    target_input = st.number_input("Search Target ID", value=108, step=1)
+
+    def bubble_sort(arr):
+        lst = arr[:]
+        n = len(lst)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if lst[j] > lst[j + 1]:
+                    lst[j], lst[j + 1] = lst[j + 1], lst[j]
+        return lst
+
+    def selection_sort(arr):
+        lst = arr[:]
+        n = len(lst)
+        for i in range(n):
+            min_idx = i
+            for j in range(i + 1, n):
+                if lst[j] < lst[min_idx]:
+                    min_idx = j
+            lst[i], lst[min_idx] = lst[min_idx], lst[i]
+        return lst
+
+    def linear_search(arr, t):
+        for i in range(len(arr)):
+            if arr[i] == t:
+                return i
+        return -1
+
+    def binary_search(arr, t):
+        lo, hi = 0, len(arr) - 1
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if arr[mid] == t:
+                return mid
+            elif arr[mid] < t:
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        return -1
+
+    if st.button("Sort & Search"):
         try:
-            ids = [int(x.strip()) for x in ids_raw.split(",") if x.strip()]
-            target = int(target_raw)
+            ids = [int(x.strip()) for x in ids_input.split(",") if x.strip()]
+            target = int(target_input)
             if len(ids) < 2:
-                error = "Enter at least 2 IDs."
+                st.error("Enter at least 2 IDs.")
             else:
                 bs = bubble_sort(ids)
                 ss = selection_sort(ids)
                 li = linear_search(ids, target)
                 bi = binary_search(bs, target)
-                result = {
-                    "original": ids, "bubble": bs, "selection": ss,
-                    "target": target,
-                    "linear": li, "binary": bi
-                }
+
+                st.markdown("---")
+                st.subheader("Sorting Results")
+                st.write(f"**Original:**   {ids}")
+                st.write(f"**Bubble Sort:**    {bs}")
+                st.write(f"**Selection Sort:** {ss}")
+
+                st.markdown("---")
+                st.subheader(f"Search Results for ID {target}")
+                if li != -1:
+                    st.success(f"Linear Search: Found at index {li} (original list)")
+                else:
+                    st.error("Linear Search: Not found")
+
+                if bi != -1:
+                    st.success(f"Binary Search: Found at index {bi} (sorted list)")
+                else:
+                    st.error("Binary Search: Not found")
         except ValueError:
-            error = "Enter valid comma-separated integers."
-    return render_template("lab4.html", result=result, error=error)
+            st.error("Enter valid comma-separated integers for IDs.")
 
-# Lab 5
-@app.route("/lab5", methods=["GET", "POST"])
-def lab5():
-    result = None
-    error = None
-    if request.method == "POST":
-        name = request.form.get("name", "").strip() or "Student"
-        try:
-            tuition   = float(request.form.get("tuition", 0) or 0)
-            hostel    = float(request.form.get("hostel", 0) or 0)
-            transport = float(request.form.get("transport", 0) or 0)
-            if tuition <= 0:
-                error = "Please enter a valid tuition fee."
-            else:
-                total = tuition + hostel + transport
-                result = {"name": name, "tuition": tuition, "hostel": hostel,
-                          "transport": transport, "total": total}
-        except ValueError:
-            error = "Enter valid numeric fee values."
-    return render_template("lab5.html", result=result, error=error)
 
-# Lab 6
-@app.route("/lab6", methods=["GET", "POST"])
-def lab6():
-    error = None
-    report = None
-    if request.method == "POST":
-        action = request.form.get("action")
-        if action == "add":
-            name = request.form.get("name", "").strip()
-            marks_raw = request.form.get("marks", "")
-            if not name:
-                error = "Name cannot be empty."
-            else:
-                try:
-                    marks = int(marks_raw)
-                    if not (0 <= marks <= 100):
-                        error = "Marks must be between 0 and 100."
-                    else:
-                        sid = 101 + len(file_records)
-                        _, remark = get_grade(marks)
-                        file_records.append({"id": sid, "name": name, "marks": marks, "remark": remark})
-                except ValueError:
-                    error = "Enter a valid integer for marks."
-        elif action == "clear":
-            file_records.clear()
-        elif action == "report" and file_records:
-            total = len(file_records)
-            avg = round(sum(r["marks"] for r in file_records) / total, 2)
-            top = max(file_records, key=lambda r: r["marks"])
-            low = min(file_records, key=lambda r: r["marks"])
-            report = {"total": total, "avg": avg, "top": top, "low": low}
-    return render_template("lab6.html", records=file_records, report=report, error=error)
+# ══════════════════════════════════════════════════════════════
+# LAB 5 — Fee Calculation
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 5 · Fee Calculation":
+    st.title("Student Fee Calculation")
+    st.caption("Lab 5 · Functions with Default Parameters")
+    st.markdown("---")
 
-# Lab 7
-@app.route("/lab7", methods=["GET", "POST"])
-def lab7():
-    tree = None
-    error = None
-    path = ""
-    if request.method == "POST":
-        path = request.form.get("path", "").strip()
-        if not path:
-            error = "Please enter a directory path."
-        elif not os.path.exists(path):
-            error = f"FileNotFoundError: Invalid directory path: '{path}'"
-        elif not os.path.isdir(path):
-            error = f"NotADirectoryError: '{path}' is not a directory."
+    def calculate_fee(tuition_fee, hostel_fee=0, transportation_fee=0):
+        return tuition_fee + hostel_fee + transportation_fee
+
+    name      = st.text_input("Student Name", placeholder="e.g. Anita")
+    tuition   = st.number_input("Tuition Fee (₹)", min_value=0.0, step=1000.0)
+    hostel    = st.number_input("Hostel Fee (₹) — optional (default = 0)", min_value=0.0, step=1000.0)
+    transport = st.number_input("Transport Fee (₹) — optional (default = 0)", min_value=0.0, step=500.0)
+
+    if st.button("Calculate Fee"):
+        if tuition <= 0:
+            st.error("Please enter a valid tuition fee.")
         else:
-            tree = []
-            warnings = []
-            for root, dirs, files in os.walk(path):
-                level = root.replace(path, "").count(os.sep)
-                tree.append({"indent": level, "name": os.path.basename(root), "type": "folder"})
-                for f in files:
-                    tree.append({"indent": level + 1, "name": f, "type": "file"})
-                if not files and not dirs:
-                    warnings.append(f"MissingFileOrFolderError: Empty folder: '{root}'")
-            tree_data = {"items": tree, "warnings": warnings}
-            tree = tree_data
-    return render_template("lab7.html", tree=tree, error=error, path=path)
+            total = calculate_fee(tuition, hostel, transport)
+            st.markdown("---")
+            st.subheader(f"Fee Breakdown — {name or 'Student'}")
+            st.write(f"Tuition Fee: ₹ {tuition:,.2f}")
+            if hostel:
+                st.write(f"Hostel Fee: ₹ {hostel:,.2f}")
+            if transport:
+                st.write(f"Transport Fee: ₹ {transport:,.2f}")
+            st.markdown("---")
+            st.metric("Total Fee", f"₹ {total:,.2f}")
 
-# Lab 8
-@app.route("/lab8", methods=["GET", "POST"])
-def lab8():
-    result = None
-    error = None
-    csv_data = []
+
+# ══════════════════════════════════════════════════════════════
+# LAB 6 — File Records
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 6 · File Records":
+    st.title("File Handling — Academic Records")
+    st.caption("Lab 6 · File Operations (write, read, process)")
+    st.markdown("---")
+
+    def get_grade(m):
+        if m >= 90: return "A", "Excellent"
+        elif m >= 75: return "B", "Very Good"
+        elif m >= 60: return "C", "Good"
+        elif m >= 40: return "D", "Average"
+        else: return "F", "Needs Improvement"
+
+    col1, col2 = st.columns(2)
+    name  = col1.text_input("Student Name", placeholder="e.g. Arjun")
+    marks = col2.number_input("Marks (0–100)", min_value=0, max_value=100, step=1)
+
+    c1, c2, c3 = st.columns(3)
+    add    = c1.button("Write Record")
+    report = c2.button("Generate Report")
+    clear  = c3.button("Clear File")
+
+    if add:
+        if not name.strip():
+            st.error("Name cannot be empty.")
+        else:
+            grade, remark = get_grade(marks)
+            st.session_state.file_records.append({
+                "id": st.session_state.file_id,
+                "name": name, "marks": marks,
+                "grade": grade, "remark": remark
+            })
+            st.session_state.file_id += 1
+            st.success(f"Record for '{name}' written.")
+
+    if clear:
+        st.session_state.file_records = []
+        st.session_state.file_id = 101
+        st.info("File cleared.")
+
+    if st.session_state.file_records:
+        st.markdown("---")
+        st.subheader("Stored Records (student_records.txt)")
+
+        # Show raw file format
+        raw = "ID,Name,Marks\n"
+        for r in st.session_state.file_records:
+            raw += f"{r['id']},{r['name']},{r['marks']}\n"
+        st.code(raw, language="text")
+
+        # Table
+        st.subheader("Parsed Records")
+        for r in st.session_state.file_records:
+            st.write(f"**{r['id']}** | {r['name']} | {r['marks']} marks | Grade: {r['grade']} — {r['remark']}")
+
+    if report:
+        if not st.session_state.file_records:
+            st.error("No records to report.")
+        else:
+            recs = st.session_state.file_records
+            total = len(recs)
+            avg   = round(sum(r["marks"] for r in recs) / total, 2)
+            top   = max(recs, key=lambda r: r["marks"])
+            low   = min(recs, key=lambda r: r["marks"])
+
+            st.markdown("---")
+            st.subheader("Generated Report")
+            col1, col2 = st.columns(2)
+            col1.metric("Total Students", total)
+            col1.metric("Average Marks", avg)
+            col2.metric("Top Student", f"{top['name']} ({top['marks']})")
+            col2.metric("Lowest Scorer", f"{low['name']} ({low['marks']})")
+
+
+# ══════════════════════════════════════════════════════════════
+# LAB 7 — Directory Scanner
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 7 · Directory Scanner":
+    st.title("Directory Scanner")
+    st.caption("Lab 7 · os.walk, Exception Handling, User-Defined Exceptions")
+    st.markdown("---")
+
+    class MissingFileOrFolderError(Exception):
+        pass
+
+    path = st.text_input("Directory Path", placeholder=r"e.g. C:\Users\YourName\Desktop\SmartCampus")
+
+    if st.button("Scan Directory"):
+        if not path.strip():
+            st.error("Please enter a directory path.")
+        elif not os.path.exists(path):
+            st.error(f"FileNotFoundError: Invalid directory path: '{path}'")
+        elif not os.path.isdir(path):
+            st.error(f"NotADirectoryError: '{path}' is not a directory.")
+        else:
+            st.markdown("---")
+            st.subheader("Directory Structure")
+            tree_text = ""
+            total_files = 0
+            total_folders = 0
+            warnings = []
+
+            try:
+                for root, dirs, files in os.walk(path):
+                    level = root.replace(path, "").count(os.sep)
+                    indent = "    " * level
+                    tree_text += f"{indent}📁 {os.path.basename(root)}/\n"
+                    total_folders += 1
+                    for f in files:
+                        tree_text += f"{'    ' * (level + 1)}📄 {f}\n"
+                        total_files += 1
+                    if not files and not dirs:
+                        try:
+                            raise MissingFileOrFolderError(f"Empty folder: '{root}'")
+                        except MissingFileOrFolderError as e:
+                            warnings.append(str(e))
+
+                st.code(tree_text, language="text")
+                col1, col2 = st.columns(2)
+                col1.metric("Total Folders", total_folders)
+                col2.metric("Total Files", total_files)
+
+                if warnings:
+                    st.markdown("---")
+                    for w in warnings:
+                        st.warning(f"⚠ MissingFileOrFolderError: {w}")
+
+            except PermissionError:
+                st.error(f"PermissionError: Cannot access '{path}'")
+            except Exception as e:
+                st.error(f"Unexpected Error: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+# LAB 8 — Performance Analytics
+# ══════════════════════════════════════════════════════════════
+elif page == "Lab 8 · Performance Analytics":
+    st.title("Student Performance Analytics")
+    st.caption("Lab 8 · statistics module (mean, median, stdev) — same logic as NumPy/Pandas")
+    st.markdown("---")
 
     CSV_FILE = "student_performance.csv"
 
-    if request.method == "POST":
-        action = request.form.get("action")
-        if action == "load":
-            # Load from CSV
-            if not os.path.exists(CSV_FILE):
-                error = f"'{CSV_FILE}' not found. Make sure it's in the same folder as app.py."
-            else:
-                try:
-                    with open(CSV_FILE, "r") as f:
-                        lines = f.readlines()
-                    headers = lines[0].strip().split(",")
-                    for line in lines[1:]:
-                        parts = line.strip().split(",")
-                        if len(parts) == 4:
-                            csv_data.append({
-                                "name": parts[0],
-                                "math": float(parts[1]),
-                                "science": float(parts[2]),
-                                "english": float(parts[3])
-                            })
-                    if not csv_data:
-                        error = "No data found in CSV."
-                    else:
-                        result = compute_analytics(csv_data)
-                except Exception as e:
-                    error = f"Error reading CSV: {e}"
+    if st.button("Load CSV & Run Analytics"):
+        if not os.path.exists(CSV_FILE):
+            st.error(f"FileNotFoundError: '{CSV_FILE}' not found. Place it in the same folder as app.py.")
+        else:
+            try:
+                with open(CSV_FILE, "r") as f:
+                    lines = f.readlines()
 
-    return render_template("lab8.html", result=result, error=error)
+                data = []
+                for line in lines[1:]:
+                    parts = line.strip().split(",")
+                    if len(parts) == 4:
+                        data.append({
+                            "name":    parts[0],
+                            "math":    float(parts[1]),
+                            "science": float(parts[2]),
+                            "english": float(parts[3])
+                        })
 
-def compute_analytics(data):
-    import statistics
-    subjects = ["math", "science", "english"]
-    stats = {}
-    for s in subjects:
-        vals = [d[s] for d in data]
-        stats[s] = {
-            "mean":   round(sum(vals) / len(vals), 2),
-            "median": round(statistics.median(vals), 2),
-            "stdev":  round(statistics.stdev(vals), 2) if len(vals) > 1 else 0
-        }
-    tops = {s: max(data, key=lambda d: d[s]) for s in subjects}
-    return {"data": data, "stats": stats, "tops": tops}
+                if not data:
+                    st.error("No data found in CSV.")
+                else:
+                    # Raw data
+                    st.subheader("Raw Data (from CSV)")
+                    for s in data:
+                        avg = round((s["math"] + s["science"] + s["english"]) / 3, 1)
+                        st.write(f"**{s['name']}** | Math: {s['math']} | Science: {s['science']} | English: {s['english']} | Avg: {avg}")
 
+                    st.markdown("---")
 
-if __name__ == "__main__":
-    app.run(debug=True)
+                    # Stats
+                    subjects = ["math", "science", "english"]
+                    st.subheader("Statistical Summary (NumPy-equivalent)")
+                    col1, col2, col3 = st.columns(3)
+                    cols = [col1, col2, col3]
+                    for i, subj in enumerate(subjects):
+                        vals = [d[subj] for d in data]
+                        mean   = round(statistics.mean(vals), 2)
+                        median = round(statistics.median(vals), 2)
+                        stdev  = round(statistics.stdev(vals), 2) if len(vals) > 1 else 0
+                        cols[i].metric(subj.capitalize() + " Mean", mean)
+                        cols[i].write(f"Median: {median}")
+                        cols[i].write(f"Std Dev: {stdev}")
+
+                    st.markdown("---")
+
+                    # Top performers
+                    st.subheader("Top Performers")
+                    col1, col2, col3 = st.columns(3)
+                    for col, subj in zip([col1, col2, col3], subjects):
+                        top = max(data, key=lambda d: d[subj])
+                        col.success(f"**{subj.capitalize()}**\n\n{top['name']} ({top[subj]})")
+
+                    st.markdown("---")
+
+                    # Bar chart using st.bar_chart
+                    st.subheader("Average Scores per Subject (Bar Chart)")
+                    chart_data = {
+                        "Subject": ["Math", "Science", "English"],
+                        "Average": [
+                            round(statistics.mean([d["math"]    for d in data]), 2),
+                            round(statistics.mean([d["science"] for d in data]), 2),
+                            round(statistics.mean([d["english"] for d in data]), 2),
+                        ]
+                    }
+                    import pandas as pd
+                    df = pd.DataFrame(chart_data).set_index("Subject")
+                    st.bar_chart(df)
+
+            except Exception as e:
+                st.error(f"Unexpected Error: {e}")
